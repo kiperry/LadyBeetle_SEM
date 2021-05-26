@@ -7,12 +7,27 @@ library(AED) #this must be downloaded via github using the following code:
 #remotes::install_github("romunov/AED")
 
 #import data set
-
+df <- read_csv("Sweeps.2010v2.csv", col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+df$Site <- as.factor(df$Site)
+df$County <- as.factor(df$County)
+df$Plot <- as.factor(df$Plot)
+df$Crop <- as.factor(df$Crop)
+df$Experiment <- as.factor(df$Experiment)
 #complete cases
-
+df2 <- df[complete.cases(df),]
 #Outliers 
-data(Loyn)
-dotchart(Loyn$ABUND)
+dotchart(df2$Exotic)
+dotchart(df2$Native)
+dotchart(df2$Aphids) #transform due to outliers
+dotchart(df2$Other.aphid.predators) #transform due to outliers
+
+#####don't do for now because log transforming isn't possible on zeros ------------------
+# df2$L.Aphids <- log10(df2$Aphids)
+# dotchart(df2$L.Aphids)
+# 
+# df2$L.preds <- log10(df2$Other.aphid.predators)
+# dotchart(df2$L.preds)
+#----------------------------------------------------------
 
 #Collinearity: assessed in three ways 
 #(1) Pairwise scatterplots
@@ -47,8 +62,11 @@ Mypairs <- function(Z) {
 }
 
 #change this to the appropriate data set (potentially with data transformations)
-Z <- cbind(Loyn$ABUND, Loyn$AREA, Loyn$LDIST, Loyn$DIST, Loyn$YR.ISOL, Loyn$ALT, Loyn$GRAZE)
-colnames(Z) <- c("Abund", "Area", "LDist","Dist","Year Iso","Alt","Graze")
+#Z <- cbind(df2$Crop, df2$Exotic, df2$Native, df2$L.Aphids, df2$L.preds) #does not work because of log
+#colnames(Z) <- c("Crop","Exotic","Native","Log Aphid","Log Aphid Preds")
+
+Z <- cbind(df2$Crop, df2$Exotic, df2$Native, df2$Aphids, df2$Other.aphid.predators)
+colnames(Z) <- c("Crop","Exotic","Native","Aphid","Aphid Preds")
 
 # pairDF <- data.frame(Cu = log10(HMdata$lCu), Fe = log10(HMdata$lFe), Zn = HMdata$lZn, Ba = HMdata$lBa, Cd = log10(HMdata$lCd+.01), Co = log10(HMdata$lCo+.01), Cr = log10(HMdata$lCr+.01), Li = log10(HMdata$lLi), Ni = log10(HMdata$lNi), Pb = log10(HMdata$lPb+.01), Sb = log10(HMdata$lSb+.01), Si = log10(HMdata$lSi), Sr = log10(HMdata$lSr), Month = as.factor(HMdata$Month), Num.larvae = HMdata$Num.larvae)
 
@@ -58,8 +76,8 @@ Mypairs(Z)
 #(2) Correlation coefficients and (3) Variance inflation factors (VIF)
 
 #just the explanatory variables
-drops <- "Num.larvae"
-edf <- pairDF[ , !(names(pairDF) %in% drops)]
+drops <- "Native"
+edf <- Z[ , !(names(Z) %in% drops)]
 
 ##################################################################
 #VIF FUNCTION.####
