@@ -2,6 +2,11 @@
 
 library(car)
 library(plyr)
+#install.packages("readr")
+library(readr)
+#install.package("nortest")
+library(nortest)
+#install.packages("usdm")
 library(usdm) #for vif
 library(lme4)
 library(AED) #this must be downloaded via github using the following code:
@@ -9,19 +14,44 @@ library(AED) #this must be downloaded via github using the following code:
 #remotes::install_github("romunov/AED")
 
 #import data set
-df <- read_csv("Sweeps.2010v2.csv", col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+#df <- read_csv("Sweeps.2010v2.csv", col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+df <- read_csv("Sweeps.2010.plotsCombined.csv", col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+# date did not format correctly for some reason
 df$Site <- as.factor(df$Site)
 df$County <- as.factor(df$County)
-df$Plot <- as.factor(df$Plot)
+#df$Plot <- as.factor(df$Plot)
 df$Crop <- as.factor(df$Crop)
-df$Experiment <- as.factor(df$Experiment)
+#df$Experiment <- as.factor(df$Experiment)
+str(df)
+
 #complete cases
-df2 <- df[complete.cases(df),]
+#df2 <- df[complete.cases(df),]
 #Outliers 
-dotchart(df2$Exotic)
-dotchart(df2$Native)
-dotchart(df2$Aphids) #transform due to outliers
-dotchart(df2$Other.aphid.predators) #transform due to outliers
+#dotchart(df2$Exotic)
+#dotchart(df2$Native)
+#dotchart(df2$Aphids) #transform due to outliers
+#dotchart(df2$Other.aphid.predators) #transform due to outliers
+
+# Outliers, normality, variance
+dotchart(df$Exotic)
+dotchart(df$Exotic, groups = df$Crop)
+with(df, ad.test(Exotic))
+with(df, bartlett.test(Exotic ~ Crop))
+
+dotchart(df$Native)
+dotchart(df$Native, groups = df$Crop) # no natives in soybean!
+with(df, ad.test(Native))
+with(df, bartlett.test(Native ~ Crop))
+
+dotchart(df$Aphids) #transform due to outliers
+dotchart(df$Aphids, groups = df$Crop)
+with(df, ad.test(Aphids))
+with(df, bartlett.test(Aphids ~ Crop))
+
+dotchart(df$Other.preds) #transform due to outliers
+dotchart(df$Other.preds, groups = df$Crop)
+with(df, ad.test(Other.preds))
+with(df, bartlett.test(Other.preds ~ Crop))
 
 #####don't do for now because log transforming isn't possible on zeros ------------------
 # df2$L.Aphids <- log10(df2$Aphids)
@@ -67,8 +97,11 @@ Mypairs <- function(Z) {
 #Z <- cbind(df2$Crop, df2$Exotic, df2$Native, df2$L.Aphids, df2$L.preds) #does not work because of log
 #colnames(Z) <- c("Crop","Exotic","Native","Log Aphid","Log Aphid Preds")
 
-Z <- data.frame(df2$Crop, df2$Exotic, df2$Native, df2$Aphids, df2$Other.aphid.predators)
-colnames(Z) <- c("Crop","Exotic","Native","Aphid","Aphid Preds")
+#Z <- data.frame(df2$Crop, df2$Exotic, df2$Native, df2$Aphids, df2$Other.aphid.predators)
+#colnames(Z) <- c("Crop","Exotic","Native","Aphid","Aphid Preds")
+
+Z <- data.frame(df$Crop, df$Exotic, df$Native, df$Aphids, df$Other.preds)
+colnames(Z) <- c("Crop","Exotic","Native","Aphid","Aphid_Preds")
 
 # pairDF <- data.frame(Cu = log10(HMdata$lCu), Fe = log10(HMdata$lFe), Zn = HMdata$lZn, Ba = HMdata$lBa, Cd = log10(HMdata$lCd+.01), Co = log10(HMdata$lCo+.01), Cr = log10(HMdata$lCr+.01), Li = log10(HMdata$lLi), Ni = log10(HMdata$lNi), Pb = log10(HMdata$lPb+.01), Sb = log10(HMdata$lSb+.01), Si = log10(HMdata$lSi), Sr = log10(HMdata$lSr), Month = as.factor(HMdata$Month), Num.larvae = HMdata$Num.larvae)
 
@@ -85,7 +118,8 @@ edf2 <- edf[,colnames(edf)!="Crop"]
 vif(edf2) # uses package usdm
 
 #actual models
-mod1 <- glmer(Native~Exotic + Crop + Aphids + Other.aphid.predators + County + (1|Site), family = poisson, data = df2)
+#mod1 <- glmer(Native~Exotic + Crop + Aphids + Other.aphid.predators + County + (1|Site), family = poisson, data = df2)
+mod1 <- glmer(Native~Exotic + Crop + Aphids + Other.preds + County + (1|Site), family = poisson, data = df)
 
 #model doesnt converge, so I tried a bunch of things from here: https://rstudio-pubs-static.s3.amazonaws.com/33653_57fc7b8e5d484c909b615d8633c01d51.html
 #rescale and center continuous parameters
