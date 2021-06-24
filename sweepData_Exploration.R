@@ -119,12 +119,12 @@ vif(edf2) # uses package usdm
 
 #actual models
 #mod1 <- glmer(Native~Exotic + Crop + Aphids + Other.aphid.predators + County + (1|Site), family = poisson, data = df2)
-mod1 <- glmer(Native~Exotic + Crop + Aphids + Other.preds + County + (1|Site), family = poisson, data = df)
+mod1 <- glmer(Native~Exotic + Crop + Aphids + Other.preds + (1|County/Site), family = poisson, data = df)
 
 #model doesnt converge, so I tried a bunch of things from here: https://rstudio-pubs-static.s3.amazonaws.com/33653_57fc7b8e5d484c909b615d8633c01d51.html
 #rescale and center continuous parameters
-df2scale <- df2
-df2Names <- c("Aphids","Other.aphid.predators","Exotic")
+df2scale <- df
+df2Names <- c("Aphids","Other.preds","Exotic")
 df2scale[,df2Names] <- scale(df2scale[,df2Names])
 
 mod1_sc <- update(mod1,data=df2scale)
@@ -138,7 +138,7 @@ m3 <- update(mod1_sc,start=ss,control=glmerControl(optimizer="nloptwrap",
 #different optimizer optiions: "bobyqa","Nelder_Mead","nlminbwrap","nmkbw","optimx","nloptwrap" 
 
 
-mod2 <- glmer.nb(Native~Exotic + Crop + Aphids + Other.aphid.predators + County + (1|Site), data = df2scale)
+mod2 <- glmer.nb(Native~Exotic + Crop + Aphids + Other.preds + (1|County/Site), data = df2scale)
 ss <- getME(mod2,c("theta","fixef"))
 m2.2 <- update(mod2,start=ss,control=glmerControl(optCtrl=list(maxfun=2e4)))
 
